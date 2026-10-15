@@ -27,6 +27,10 @@ jobs:
       - name: Install AVR platform
         run: arduino-cli core install arduino:avr
 
+      # Инсталиране на библиотеката за LCD дисплея
+      - name: Install LiquidCrystal library
+        run: arduino-cli lib install LiquidCrystal
+
       # Компилиране на скицата в корена на хранилището
       - name: Compile Digital Feed for Arduino Mega 2560
         run: arduino-cli compile --fqbn arduino:avr:mega --warnings all --export-binaries .
