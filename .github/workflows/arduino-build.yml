@@ -31,15 +31,29 @@ jobs:
       - name: Install LiquidCrystal library
         run: arduino-cli lib install LiquidCrystal
 
-      # Компилиране на скицата в корена на хранилището
-      - name: Compile Digital Feed for Arduino Mega 2560
-        run: arduino-cli compile --fqbn arduino:avr:mega --warnings all --export-binaries .
+      # Подготовка на отделна скица за TSS версията.
+      # Digital_Feed_7e2.ino е стара алтернативна версия със същите ISR прекъсвания,
+      # затова не трябва да се компилира заедно с Digital_Feed_Z-X_7e2_TSS.ino.
+      - name: Prepare TSS sketch
+        run: |
+          mkdir -p build/Digital_Feed_Z-X_7e2_TSS
+          for file in *.ino; do
+            if [ "$file" = "Digital_Feed_7e2.ino" ]; then
+              continue
+            fi
+            cp "$file" build/Digital_Feed_Z-X_7e2_TSS/
+          done
+          cp LiquidCrystal.h LiquidCrystal.cpp build/Digital_Feed_Z-X_7e2_TSS/
+
+      # Компилиране само на TSS версията и общите файлове към нея.
+      - name: Compile Digital Feed TSS for Arduino Mega 2560
+        run: arduino-cli compile --fqbn arduino:avr:mega --warnings all --export-binaries build/Digital_Feed_Z-X_7e2_TSS
 
       # Запазване на генерирания HEX файл като артефакт за изтегляне
       - name: Upload HEX artifact
         uses: actions/upload-artifact@v4
         with:
           name: Digital_Feed_7e2-HEX
-          path: "*.hex"
+          path: "build/Digital_Feed_Z-X_7e2_TSS/*.hex"
           if-no-files-found: error
           retention-days: 30
