@@ -27,9 +27,6 @@ jobs:
       - name: Install AVR platform
         run: arduino-cli core install arduino:avr
 
-      # Инсталиране на библиотеката за LCD дисплея
-      - name: Install LiquidCrystal library
-        run: arduino-cli lib install LiquidCrystal
 
       # Подготовка на отделна скица за TSS версията.
       # Digital_Feed_7e2.ino е стара алтернативна версия със същите ISR прекъсвания,
@@ -43,7 +40,6 @@ jobs:
             fi
             cp "$file" build/Digital_Feed_Z-X_7e2_TSS/
           done
-          cp LiquidCrystal.h LiquidCrystal.cpp build/Digital_Feed_Z-X_7e2_TSS/
 
       # Компилиране само на TSS версията и общите файлове към нея.
       - name: Compile Digital Feed TSS for Arduino Mega 2560
