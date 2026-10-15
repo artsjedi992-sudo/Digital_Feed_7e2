@@ -1,0 +1,41 @@
+name: Digital Feed Arduino Build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Изтегляне на проекта от GitHub
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # Инсталиране на Arduino CLI
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      # Обновяване на индекса с наличните Arduino платформи
+      - name: Update Arduino indexes
+        run: arduino-cli core update-index
+
+      # Инсталиране на AVR платформата за Arduino Mega 2560
+      - name: Install AVR platform
+        run: arduino-cli core install arduino:avr
+
+      # Компилиране на скицата в корена на хранилището
+      - name: Compile Digital Feed for Arduino Mega 2560
+        run: arduino-cli compile --fqbn arduino:avr:mega --warnings all --export-binaries .
+
+      # Запазване на генерирания HEX файл като артефакт за изтегляне
+      - name: Upload HEX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Digital_Feed_7e2-HEX
+          path: "*.hex"
+          if-no-files-found: error
+          retention-days: 30
