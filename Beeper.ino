@@ -12,18 +12,30 @@ void Beep()
 
 void BeepBeep()
 {
-   Beeper_On();
-   _delay_ms(25);
-   Beeper_Off();   
+   Beeper_On();   _delay_ms(25);   Beeper_Off();   
    _delay_ms(200);
-   Beeper_On();
-   _delay_ms(25);
-   Beeper_Off();
+   Beeper_On();   _delay_ms(25);   Beeper_Off();
 }
 
 void Beep_Error()
 {
-   Beeper_On();
-   _delay_ms(250);
-   Beeper_Off();
+   Beeper_On();  _delay_ms(250);   Beeper_Off();   
+   _delay_ms(200);
+   Beeper_On();   _delay_ms(25);   Beeper_Off();   
+   _delay_ms(200);
+   Beeper_On();   _delay_ms(25);   Beeper_Off();   
+   _delay_ms(200);
+   Beeper_On();   _delay_ms(25);   Beeper_Off();
 }
+
+void BeepComplete()  
+{
+   flag_end_operation = true;
+   Beeper_On();   _delay_ms(500);   Beeper_Off();
+   _delay_ms(200);
+   Beeper_On();   _delay_ms(500);   Beeper_Off();
+   _delay_ms(200);
+   Beeper_On();   _delay_ms(500);   Beeper_Off();
+   _delay_ms(200);
+}
+

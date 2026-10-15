@@ -62,14 +62,14 @@ void H_Coder()
 
       if (Motor_Z_Pos < Null_Z_Pos + Hand_Z_Pos)
       {
-         Motor_Z_Dir = CW;
+         Motor_Z_Dir = CW;//Motor_Z_Dir = CW;
          Motor_Z_CW();
          Limit_Pos_HC = Null_Z_Pos + Hand_Z_Pos - Brake_Compens;
          Limit_Pos = Limit_Pos_Left - Brake_Compens;
       }
       else if (Motor_Z_Pos > Null_Z_Pos + Hand_Z_Pos)
       {
-         Motor_Z_Dir = CCW;
+         Motor_Z_Dir = CCW;//Motor_Z_Dir = CCW;
          Motor_Z_CCW();
          Limit_Pos_HC = Null_Z_Pos + Hand_Z_Pos + Brake_Compens;
          Limit_Pos = Limit_Pos_Right + Brake_Compens;
@@ -97,13 +97,13 @@ void H_Coder()
 
       if (Motor_X_Pos < Null_X_Pos + Hand_X_Pos)
       {
-         Motor_X_Dir = CW;
+         Motor_X_Dir = CW;//Motor_X_Dir = CW;
          Motor_X_CW();
          Limit_Pos_HC = Null_X_Pos + Hand_X_Pos - Brake_Compens;
       }
       else if (Motor_X_Pos > Null_X_Pos + Hand_X_Pos)
       {
-         Motor_X_Dir = CCW;
+         Motor_X_Dir = CCW;//Motor_X_Dir = CCW;
          Motor_X_CCW();
          Limit_Pos_HC = Null_X_Pos + Hand_X_Pos + Brake_Compens;
       }

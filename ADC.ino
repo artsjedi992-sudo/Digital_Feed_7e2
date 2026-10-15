@@ -3,8 +3,8 @@ void Read_ADC_Feed()
    /////////// Переменник Подачи ///////////
    if (Mode == Mode_Feed || Mode == Mode_Cone_L || Mode == Mode_Cone_R || Mode == Mode_aFeed || Mode == Mode_Sphere)
    {
-      int New_ADC_Feed = analogRead(A7);
-      if (New_ADC_Feed > ADC_Feed +4 || New_ADC_Feed < ADC_Feed -4)
+      int New_ADC_Feed = constrain(map(analogRead(A7), 8, 1015, 0, 1023), 0, 1023);//analogRead(A7);
+      if (New_ADC_Feed > ADC_Feed + 2 || New_ADC_Feed < ADC_Feed - 2)
       {
          if (++x > 15) {x = 0;}
          Sum_ADC = Sum_ADC - ADC_Array[x];
@@ -20,7 +20,7 @@ void Read_ADC_Feed()
       if (Feed_mm_New != Feed_mm)
       {
          Feed_mm = Feed_mm_New;
-         Print();
+         //Print();
          Beep();
 
          switch (Mode)
@@ -58,7 +58,6 @@ void Read_ADC_Feed()
          }
       }
    }
-
    else if (Mode == Mode_aFeed)
    {
       uint16_t aFeed_mm_New = MAX_aFEED/10 - long(MAX_aFEED/10 - MIN_aFEED/10 + 1) * ADC_Feed / 1024;
@@ -66,24 +65,24 @@ void Read_ADC_Feed()
       if (aFeed_mm_New != aFeed_mm)
       {
          aFeed_mm = aFeed_mm_New;
-         Print();
+         //Print();
          Beep();
 
          switch (Mode)
          {
             case Mode_aFeed:     //////////////////////////////////
-            if (Joy_Z_flag == ON && Button_Rapid != 0  && Step_Z_flag == ON)
-            {
-               b_flag = false;
-               if (Motor_Z_Dir == CW) {aFeed_Left(a_flag, b_flag);}
-               else                   {aFeed_Right(a_flag, b_flag);}
-            }
-            else if (Joy_X_flag == ON && Button_Rapid != 0  && Step_X_flag == ON)
-            {
-               b_flag = false;
-               if (Motor_X_Dir == CW) {aFeed_Front(a_flag, b_flag);}
-               else                   {aFeed_Rear(a_flag, b_flag);}
-            }
+               if (Joy_Z_flag == ON && Button_Rapid != 0  && Step_Z_flag == ON)
+               {
+                  b_flag = false;
+                  if (Motor_Z_Dir == CW) {aFeed_Left(a_flag, b_flag);}
+                  else                   {aFeed_Right(a_flag, b_flag);}
+               }
+               else if (Joy_X_flag == ON && Button_Rapid != 0  && Step_X_flag == ON)
+               {
+                  b_flag = false;
+                  if (Motor_X_Dir == CW) {aFeed_Front(a_flag, b_flag);}
+                  else                   {aFeed_Rear(a_flag, b_flag);}
+               }
             break;
          }
       } 
