@@ -28,14 +28,12 @@ jobs:
         run: arduino-cli core install arduino:avr
 
       # Инсталиране на LiquidCrystal като стандартна Arduino библиотека.
-      # Не копираме локалния LiquidCrystal.cpp в скицата, за да няма дублирани дефиниции.
+      # Не копираме локалния LiquidCrystal.cpp, за да няма дублирани дефиниции.
       - name: Install LiquidCrystal library
         run: arduino-cli lib install LiquidCrystal
 
-
       # Подготовка на отделна скица за TSS версията.
-      # Digital_Feed_7e2.ino е стара алтернативна версия със същите ISR прекъсвания,
-      # затова не трябва да се компилира заедно с Digital_Feed_Z-X_7e2_TSS.ino.
+      # Старата версия има същите ISR прекъсвания и не трябва да се компилира заедно с TSS.
       - name: Prepare TSS sketch
         run: |
           mkdir -p build/Digital_Feed_Z-X_7e2_TSS
@@ -45,18 +43,26 @@ jobs:
             fi
             cp "$file" build/Digital_Feed_Z-X_7e2_TSS/
           done
-          # LCD библиотеката се инсталира отделно чрез arduino-cli lib install.
-          # Не копираме LiquidCrystal.h/.cpp от репото, за да избегнем конфликт с библиотеката.
+          # LiquidCrystal се инсталира отделно; не копираме локалните .cpp/.h файлове.
 
-      # Компилиране само на TSS версията и общите файлове към нея.
+      # Компилиране на TSS версията за Arduino Mega 2560.
       - name: Compile Digital Feed TSS for Arduino Mega 2560
         run: arduino-cli compile --fqbn arduino:avr:mega --warnings all --export-binaries build/Digital_Feed_Z-X_7e2_TSS
 
-      # Запазване на генерирания HEX файл като артефакт за изтегляне
+      # Проверка къде Arduino CLI е записал HEX файла и събиране в една папка за артефакта.
+      - name: Collect HEX file
+        run: |
+          mkdir -p artifacts
+          find build -type f -name '*.hex' -print -exec cp '{}' artifacts/ \;
+          echo "HEX files collected:"
+          ls -la artifacts
+          test -n "$(find artifacts -maxdepth 1 -type f -name '*.hex' -print -quit)"
+
+      # Запазване на HEX файла за изтегляне от GitHub Actions.
       - name: Upload HEX artifact
         uses: actions/upload-artifact@v4
         with:
           name: Digital_Feed_7e2-HEX
-          path: "build/Digital_Feed_Z-X_7e2_TSS/*.hex"
+          path: artifacts/*.hex
           if-no-files-found: error
           retention-days: 30
