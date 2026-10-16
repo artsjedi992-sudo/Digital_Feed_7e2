@@ -40,8 +40,10 @@ jobs:
             fi
             cp "$file" build/Digital_Feed_Z-X_7e2_TSS/
           done
-          # Използваме локалната LCD библиотека от репото; не инсталираме втора копия.
-          cp LiquidCrystal.h LiquidCrystal.cpp build/Digital_Feed_Z-X_7e2_TSS/
+          # Arduino CLI открива локалните библиотеки в поддиректория libraries/<име>.
+          # Поставяме оригиналните файлове там, без да инсталираме друга LiquidCrystal.
+          mkdir -p build/Digital_Feed_Z-X_7e2_TSS/libraries/LiquidCrystal
+          cp LiquidCrystal.h LiquidCrystal.cpp build/Digital_Feed_Z-X_7e2_TSS/libraries/LiquidCrystal/
 
       # Компилиране само на TSS версията и общите файлове към нея.
       - name: Compile Digital Feed TSS for Arduino Mega 2560
