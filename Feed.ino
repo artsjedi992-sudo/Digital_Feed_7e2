@@ -14,6 +14,7 @@ void Feed_Left(bool & a_flag, bool & b_flag)
       diag_ocr_min = 0xFFFF;
       diag_ocr_max = 0;
       diag_done = false;
+      diag_reported = false;
    }
    // DIAG END
    a_flag = false;
@@ -69,6 +70,7 @@ void Feed_Right(bool & a_flag, bool & b_flag)
       diag_ocr_min = 0xFFFF;
       diag_ocr_max = 0;
       diag_done = false;
+      diag_reported = false;
    }
    // DIAG END
    a_flag = false;
