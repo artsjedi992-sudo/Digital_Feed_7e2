@@ -12,6 +12,7 @@ void Feed_Left(bool & a_flag, bool & b_flag)
       diag_compa_count = 0;
       diag_step_count = 0;
       diag_encoder_ticks = 0;
+      diag_rev_encoder_ticks = 0;
       diag_rev_compa = 0;
       diag_rev_steps = 0;
       diag_ocr_min = 0xFFFF;
@@ -74,6 +75,7 @@ void Feed_Right(bool & a_flag, bool & b_flag)
       diag_compa_count = 0;
       diag_step_count = 0;
       diag_encoder_ticks = 0;
+      diag_rev_encoder_ticks = 0;
       diag_rev_compa = 0;
       diag_rev_steps = 0;
       diag_ocr_min = 0xFFFF;
