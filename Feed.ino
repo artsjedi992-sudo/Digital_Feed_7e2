@@ -6,6 +6,16 @@
 void Feed_Left(bool & a_flag, bool & b_flag)
 {
    if (b_flag == true) return;
+
+   // DIAG START: нулираме диагностиката при начало на нов Z ход.
+   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+      diag_compa_count = 0;
+      diag_step_count = 0;
+      diag_ocr_min = 0xFFFF;
+      diag_ocr_max = 0;
+      diag_done = false;
+   }
+   // DIAG END
    a_flag = false;
    b_flag = true;
 
@@ -51,6 +61,16 @@ void Feed_Left(bool & a_flag, bool & b_flag)
 void Feed_Right(bool & a_flag, bool & b_flag)
 {
    if (b_flag == true) return;
+
+   // DIAG START: нулираме диагностиката при начало на нов Z ход.
+   ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+      diag_compa_count = 0;
+      diag_step_count = 0;
+      diag_ocr_min = 0xFFFF;
+      diag_ocr_max = 0;
+      diag_done = false;
+   }
+   // DIAG END
    a_flag = false;
    b_flag = true;
 
