@@ -676,8 +676,14 @@ long Motor_X_Pos = 0;
 // Броят се прекъсванията и всеки преход STEP към LOW (един отчетен микрошаг).
 volatile uint32_t diag_compa_count = 0;
 volatile uint32_t diag_step_count = 0;
+volatile uint32_t diag_encoder_ticks = 0;
+volatile uint32_t diag_rev_compa = 0;
+volatile uint32_t diag_rev_steps = 0;
 volatile uint16_t diag_ocr_min = 0xFFFF;
 volatile uint16_t diag_ocr_max = 0;
+volatile uint16_t diag_rev_ocr_min = 0xFFFF;
+volatile uint16_t diag_rev_ocr_max = 0;
+volatile bool diag_rev_done = false;
 volatile bool diag_done = false;
 volatile bool diag_reported = false;
 // DIAG END
@@ -835,25 +841,52 @@ void loop()
   if (diag_done && !diag_reported) {
     uint32_t diag_compa_snapshot;
     uint32_t diag_step_snapshot;
+    uint32_t diag_ticks_snapshot;
+    uint32_t diag_rev_compa_snapshot;
+    uint32_t diag_rev_steps_snapshot;
     uint16_t diag_min_snapshot;
     uint16_t diag_max_snapshot;
+    uint16_t diag_rev_min_snapshot;
+    uint16_t diag_rev_max_snapshot;
+    bool diag_rev_done_snapshot;
 
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
       diag_compa_snapshot = diag_compa_count;
       diag_step_snapshot = diag_step_count;
+      diag_ticks_snapshot = diag_encoder_ticks;
+      diag_rev_compa_snapshot = diag_rev_compa;
+      diag_rev_steps_snapshot = diag_rev_steps;
       diag_min_snapshot = diag_ocr_min;
       diag_max_snapshot = diag_ocr_max;
+      diag_rev_min_snapshot = diag_rev_ocr_min;
+      diag_rev_max_snapshot = diag_rev_ocr_max;
+      diag_rev_done_snapshot = diag_rev_done;
       diag_reported = true;
     }
 
-    Serial.print(F("[DIAG] Timer5 COMPA="));
+    Serial.print(F("[DIAG] TOTAL COMPA="));
     Serial.print(diag_compa_snapshot);
-    Serial.print(F(" STEP_LOW_edges="));
+    Serial.print(F(" STEP_LOW="));
     Serial.print(diag_step_snapshot);
-    Serial.print(F(" OCR5A_min="));
+    Serial.print(F(" ENC_ticks="));
+    Serial.print(diag_ticks_snapshot);
+    Serial.print(F(" OCR_min="));
     Serial.print(diag_min_snapshot);
-    Serial.print(F(" OCR5A_max="));
+    Serial.print(F(" OCR_max="));
     Serial.println(diag_max_snapshot);
+
+    if (diag_rev_done_snapshot) {
+      Serial.print(F("[DIAG] FIRST_REV COMPA="));
+      Serial.print(diag_rev_compa_snapshot);
+      Serial.print(F(" STEP_LOW="));
+      Serial.print(diag_rev_steps_snapshot);
+      Serial.print(F(" OCR_min="));
+      Serial.print(diag_rev_min_snapshot);
+      Serial.print(F(" OCR_max="));
+      Serial.println(diag_rev_max_snapshot);
+    } else {
+      Serial.println(F("[DIAG] FIRST_REV not reached during this Z move"));
+    }
   }
   // DIAG END
 
@@ -1052,6 +1085,7 @@ ISR (TIMER5_COMPA_vect)
 {
   // DIAG START: броим всяко реално изпълнение на Timer5 COMPA.
   diag_compa_count++;
+  diag_encoder_ticks += (uint32_t)OCR5A + 1;
   if (OCR5A < diag_ocr_min) diag_ocr_min = OCR5A;
   if (OCR5A > diag_ocr_max) diag_ocr_max = OCR5A;
   // DIAG END
@@ -1149,6 +1183,17 @@ ISR (TIMER5_COMPA_vect)
       }
     }
   }
+  // DIAG START: запазваме резултата за първите 2500 такта на енкодера.
+  // Проверяваме след STEP превключването, за да включим и последния фронт.
+  if (!diag_rev_done && diag_encoder_ticks >= ENC_LINE_PER_REV) {
+    diag_rev_compa = diag_compa_count;
+    diag_rev_steps = diag_step_count;
+    diag_rev_ocr_min = diag_ocr_min;
+    diag_rev_ocr_max = diag_ocr_max;
+    diag_rev_done = true;
+  }
+  // DIAG END
+
   #ifdef DEBUG_TIME_ON_TIMER5_COMPA
     DIAG_LOW(); // вышли из прерывания - "опустили" ногу
   #endif
