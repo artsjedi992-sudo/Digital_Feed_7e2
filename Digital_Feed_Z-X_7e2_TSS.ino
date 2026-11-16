@@ -677,6 +677,7 @@ long Motor_X_Pos = 0;
 volatile uint32_t diag_compa_count = 0;
 volatile uint32_t diag_step_count = 0;
 volatile uint32_t diag_encoder_ticks = 0;
+volatile uint32_t diag_rev_encoder_ticks = 0;
 volatile uint32_t diag_rev_compa = 0;
 volatile uint32_t diag_rev_steps = 0;
 volatile uint16_t diag_ocr_min = 0xFFFF;
@@ -853,7 +854,7 @@ void loop()
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
       diag_compa_snapshot = diag_compa_count;
       diag_step_snapshot = diag_step_count;
-      diag_ticks_snapshot = diag_encoder_ticks;
+      diag_ticks_snapshot = diag_rev_encoder_ticks;
       diag_rev_compa_snapshot = diag_rev_compa;
       diag_rev_steps_snapshot = diag_rev_steps;
       diag_min_snapshot = diag_ocr_min;
@@ -876,7 +877,7 @@ void loop()
     Serial.println(diag_max_snapshot);
 
     if (diag_rev_done_snapshot) {
-      Serial.print(F("[DIAG] FIRST_REV COMPA="));
+      Serial.print(F("[DIAG] STEADY_REV COMPA="));
       Serial.print(diag_rev_compa_snapshot);
       Serial.print(F(" STEP_LOW="));
       Serial.print(diag_rev_steps_snapshot);
@@ -885,7 +886,7 @@ void loop()
       Serial.print(F(" OCR_max="));
       Serial.println(diag_rev_max_snapshot);
     } else {
-      Serial.println(F("[DIAG] FIRST_REV not reached during this Z move"));
+      Serial.println(F("[DIAG] STEADY_REV not reached during this Z move"));
     }
   }
   // DIAG END
@@ -1086,6 +1087,15 @@ ISR (TIMER5_COMPA_vect)
   // DIAG START: броим всяко реално изпълнение на Timer5 COMPA.
   diag_compa_count++;
   diag_encoder_ticks += (uint32_t)OCR5A + 1;
+  // DIAG START: отделяме оборот при установена, зададена скорост на подаване.
+  bool diag_steady_interval = (!diag_rev_done && OCR5A == Feed_Divisor);
+  if (diag_steady_interval) {
+    diag_rev_encoder_ticks += (uint32_t)OCR5A + 1;
+    diag_rev_compa++;
+    if (OCR5A < diag_rev_ocr_min) diag_rev_ocr_min = OCR5A;
+    if (OCR5A > diag_rev_ocr_max) diag_rev_ocr_max = OCR5A;
+  }
+  // DIAG END
   if (OCR5A < diag_ocr_min) diag_ocr_min = OCR5A;
   if (OCR5A > diag_ocr_max) diag_ocr_max = OCR5A;
   // DIAG END
@@ -1114,6 +1124,7 @@ ISR (TIMER5_COMPA_vect)
       {
         // DIAG START: един отчетен STEP цикъл при преход към LOW.
         diag_step_count++;
+        if (diag_steady_interval) diag_rev_steps++;
         // DIAG END
         OCR5A++;
         if (Motor_Z_Dir == CW) {
@@ -1142,6 +1153,7 @@ ISR (TIMER5_COMPA_vect)
     {
       // DIAG START: един отчетен STEP цикъл при преход към LOW.
       diag_step_count++;
+      if (diag_steady_interval) diag_rev_steps++;
       // DIAG END
       if (Motor_Z_Dir == CW) {
         Motor_Z_Pos ++;
@@ -1185,11 +1197,7 @@ ISR (TIMER5_COMPA_vect)
   }
   // DIAG START: запазваме резултата за първите 2500 такта на енкодера.
   // Проверяваме след STEP превключването, за да включим и последния фронт.
-  if (!diag_rev_done && diag_encoder_ticks >= ENC_LINE_PER_REV) {
-    diag_rev_compa = diag_compa_count;
-    diag_rev_steps = diag_step_count;
-    diag_rev_ocr_min = diag_ocr_min;
-    diag_rev_ocr_max = diag_ocr_max;
+  if (!diag_rev_done && diag_rev_encoder_ticks >= ENC_LINE_PER_REV) {
     diag_rev_done = true;
   }
   // DIAG END
