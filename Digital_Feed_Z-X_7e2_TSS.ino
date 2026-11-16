@@ -672,6 +672,15 @@ byte Cone_Step = 0;
 long Motor_Z_Pos = 0;
 long Motor_X_Pos = 0;
 
+// DIAG START: броячи за проверка на Timer5 и STEP при синхронно подаване.
+// Броят се прекъсванията и всеки преход STEP към LOW (един отчетен микрошаг).
+volatile uint32_t diag_compa_count = 0;
+volatile uint32_t diag_step_count = 0;
+volatile uint16_t diag_ocr_min = 0xFFFF;
+volatile uint16_t diag_ocr_max = 0;
+volatile bool diag_done = false;
+// DIAG END
+
 long Limit_Pos_Left = Limit_Pos_Max;
 long Limit_Pos_Right = Limit_Pos_Min;
 long Limit_Pos_Front = Limit_Pos_Max;
@@ -739,6 +748,10 @@ byte LCD_Page = 1;
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup()
 {
+  // DIAG START: диагностичен изход през USB Serial, 115200 baud.
+  Serial.begin(115200);
+  // DIAG END
+
   err_0_flag = true; // считаем, что ДЖОЙ не в нейтрали ...
 
   lcd.begin(16, 2);
@@ -817,6 +830,32 @@ void setup()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void loop()
 {
+  // DIAG START: извеждаме резултата извън прекъсването.
+  if (diag_done) {
+    uint32_t diag_compa_snapshot;
+    uint32_t diag_step_snapshot;
+    uint16_t diag_min_snapshot;
+    uint16_t diag_max_snapshot;
+
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+      diag_compa_snapshot = diag_compa_count;
+      diag_step_snapshot = diag_step_count;
+      diag_min_snapshot = diag_ocr_min;
+      diag_max_snapshot = diag_ocr_max;
+      diag_done = false;
+    }
+
+    Serial.print(F("[DIAG] Timer5 COMPA="));
+    Serial.print(diag_compa_snapshot);
+    Serial.print(F(" STEP_LOW_edges="));
+    Serial.print(diag_step_snapshot);
+    Serial.print(F(" OCR5A_min="));
+    Serial.print(diag_min_snapshot);
+    Serial.print(F(" OCR5A_max="));
+    Serial.println(diag_max_snapshot);
+  }
+  // DIAG END
+
   #ifdef DEBUG_TIME_ON_LOOP
     DIAG_HIGH(); // "подняли" ногу
     //_delay_us(2);
@@ -1010,6 +1049,12 @@ ISR(INT0_vect)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ISR (TIMER5_COMPA_vect)
 {
+  // DIAG START: броим всяко реално изпълнение на Timer5 COMPA.
+  diag_compa_count++;
+  if (OCR5A < diag_ocr_min) diag_ocr_min = OCR5A;
+  if (OCR5A > diag_ocr_max) diag_ocr_max = OCR5A;
+  // DIAG END
+
   #ifdef DEBUG_TIME_ON_TIMER5_COMPA
     DIAG_HIGH(); // вошли в прерывание - "подняли" ногу
   #endif
@@ -1032,6 +1077,9 @@ ISR (TIMER5_COMPA_vect)
       Motor_Z_InvertPulse();
       if (!Read_Z_State)
       {
+        // DIAG START: един отчетен STEP цикъл при преход към LOW.
+        diag_step_count++;
+        // DIAG END
         OCR5A++;
         if (Motor_Z_Dir == CW) {
           Motor_Z_Pos ++;
@@ -1045,6 +1093,9 @@ ISR (TIMER5_COMPA_vect)
     {
       Step_Z_flag = OFF;
       Step_X_flag = OFF;
+      // DIAG START: ISR е достигнал края на подаването.
+      diag_done = true;
+      // DIAG END
     }
   }
 
@@ -1054,6 +1105,9 @@ ISR (TIMER5_COMPA_vect)
     Motor_Z_InvertPulse();
     if (!Read_Z_State)
     {
+      // DIAG START: един отчетен STEP цикъл при преход към LOW.
+      diag_step_count++;
+      // DIAG END
       if (Motor_Z_Dir == CW) {
         Motor_Z_Pos ++;
       }
