@@ -679,6 +679,7 @@ volatile uint32_t diag_step_count = 0;
 volatile uint16_t diag_ocr_min = 0xFFFF;
 volatile uint16_t diag_ocr_max = 0;
 volatile bool diag_done = false;
+volatile bool diag_reported = false;
 // DIAG END
 
 long Limit_Pos_Left = Limit_Pos_Max;
@@ -831,7 +832,7 @@ void setup()
 void loop()
 {
   // DIAG START: извеждаме резултата извън прекъсването.
-  if (diag_done) {
+  if (diag_done && !diag_reported) {
     uint32_t diag_compa_snapshot;
     uint32_t diag_step_snapshot;
     uint16_t diag_min_snapshot;
@@ -842,7 +843,7 @@ void loop()
       diag_step_snapshot = diag_step_count;
       diag_min_snapshot = diag_ocr_min;
       diag_max_snapshot = diag_ocr_max;
-      diag_done = false;
+      diag_reported = true;
     }
 
     Serial.print(F("[DIAG] Timer5 COMPA="));
