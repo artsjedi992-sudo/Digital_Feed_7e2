@@ -843,6 +843,7 @@ void loop()
     uint32_t diag_compa_snapshot;
     uint32_t diag_step_snapshot;
     uint32_t diag_ticks_snapshot;
+    uint32_t diag_rev_ticks_snapshot;
     uint32_t diag_rev_compa_snapshot;
     uint32_t diag_rev_steps_snapshot;
     uint16_t diag_min_snapshot;
@@ -854,7 +855,8 @@ void loop()
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
       diag_compa_snapshot = diag_compa_count;
       diag_step_snapshot = diag_step_count;
-      diag_ticks_snapshot = diag_rev_encoder_ticks;
+      diag_ticks_snapshot = diag_encoder_ticks;
+      diag_rev_ticks_snapshot = diag_rev_encoder_ticks;
       diag_rev_compa_snapshot = diag_rev_compa;
       diag_rev_steps_snapshot = diag_rev_steps;
       diag_min_snapshot = diag_ocr_min;
@@ -869,7 +871,7 @@ void loop()
     Serial.print(diag_compa_snapshot);
     Serial.print(F(" STEP_LOW="));
     Serial.print(diag_step_snapshot);
-    Serial.print(F(" ENC_ticks="));
+    Serial.print(F(" ENC_ticks_sum="));
     Serial.print(diag_ticks_snapshot);
     Serial.print(F(" OCR_min="));
     Serial.print(diag_min_snapshot);
@@ -877,7 +879,9 @@ void loop()
     Serial.println(diag_max_snapshot);
 
     if (diag_rev_done_snapshot) {
-      Serial.print(F("[DIAG] STEADY_REV COMPA="));
+      Serial.print(F("[DIAG] STEADY_REV ENC_ticks_sum="));
+      Serial.print(diag_rev_ticks_snapshot);
+      Serial.print(F(" COMPA="));
       Serial.print(diag_rev_compa_snapshot);
       Serial.print(F(" STEP_LOW="));
       Serial.print(diag_rev_steps_snapshot);
