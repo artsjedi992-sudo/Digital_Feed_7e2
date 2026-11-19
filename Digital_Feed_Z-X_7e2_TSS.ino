@@ -648,16 +648,29 @@ byte Ks_Divisor = 0;
 byte tmp_Ks_Divisor = THRD_ACCEL;
 int Km_Divisor = 0;
 uint16_t Feed_Divisor = 0;
-// Дробен делител за синхронно Z подаване: средният интервал може да е нецяло число.
+
+// ============================================================================
+// >>> ПРОМЯНА 1: ДРОБЕН ДЕЛИТЕЛ ЗА СИНХРОННО Z ПОДАВАНЕ <<<
+// Цел: точна средна стойност и при подавания, при които интервалът е дробен.
+// Например 1.3 mm/об: разпределя интервали 2 и 3 вместо постоянно закръгляне.
+// ============================================================================
 volatile uint32_t z_feed_fraction_remainder = 0;
 volatile uint32_t z_feed_fraction_denominator = 1;
 volatile uint32_t z_feed_fraction_accumulator = 0;
 
 void Set_Z_Feed_Divisor(uint16_t feed_hundredths)
 {
+  // При нулева стойност не допускаме деление на нула.
+  if (feed_hundredths == 0) {
+    Feed_Divisor = 1;
+    z_feed_fraction_remainder = 0;
+    z_feed_fraction_denominator = 1;
+    z_feed_fraction_accumulator = 0;
+    return;
+  }
+
   uint32_t numerator = (uint32_t)ENC_LINE_PER_REV * SCREW_Z;
   uint32_t denominator = (uint32_t)2 * MOTOR_Z_STEP_PER_REV * McSTEP_Z * feed_hundredths;
-  if (denominator == 0) denominator = 1;
 
   uint32_t ticks = numerator / denominator;
   z_feed_fraction_remainder = numerator % denominator;
@@ -667,6 +680,8 @@ void Set_Z_Feed_Divisor(uint16_t feed_hundredths)
   // OCR задава броя енкодерни фронтове минус едно.
   Feed_Divisor = (ticks > 1) ? (uint16_t)(ticks - 1) : 1;
 }
+// <<< КРАЙ НА ПРОМЯНА 1 >>>
+
 uint16_t aFeed_Divisor = 0;
 
 byte Cs_Count = 0;
@@ -1111,7 +1126,9 @@ ISR (TIMER5_COMPA_vect)
   diag_compa_count++;
   diag_encoder_ticks += (uint32_t)OCR5A + 1;
   // DIAG START: отделяме оборот при установена, зададена скорост на подаване.
+  // >>> ПРОМЯНА 2: диагностиката приема двата съседни интервала при дробно подаване.
   bool diag_steady_interval = (!diag_rev_done && (OCR5A == Feed_Divisor || OCR5A == (uint16_t)(Feed_Divisor + 1)));
+  // <<< КРАЙ НА ПРОМЯНА 2 >>>
   if (diag_steady_interval) {
     diag_rev_encoder_ticks += (uint32_t)OCR5A + 1;
     diag_rev_compa++;
@@ -1261,6 +1278,7 @@ ISR (TIMER5_COMPB_vect)
         if (Motor_X_Dir == CW)  { Motor_X_Pos ++;}
         else                    { Motor_X_Pos --; }
 
+        // >>> ПРОМЯНА 3: плавно достигане и разпределяне на дробния интервал за Z.
         if (OCR5A > (uint16_t)(Feed_Divisor + 1)) {
           OCR5A--;
         }
@@ -1278,6 +1296,7 @@ ISR (TIMER5_COMPB_vect)
             OCR5A = Feed_Divisor;
           }
         }
+        // <<< КРАЙ НА ПРОМЯНА 3 >>>
       }
     }
   }
