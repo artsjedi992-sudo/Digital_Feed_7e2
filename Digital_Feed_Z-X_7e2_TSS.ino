@@ -648,6 +648,25 @@ byte Ks_Divisor = 0;
 byte tmp_Ks_Divisor = THRD_ACCEL;
 int Km_Divisor = 0;
 uint16_t Feed_Divisor = 0;
+// Дробен делител за синхронно Z подаване: средният интервал може да е нецяло число.
+volatile uint32_t z_feed_fraction_remainder = 0;
+volatile uint32_t z_feed_fraction_denominator = 1;
+volatile uint32_t z_feed_fraction_accumulator = 0;
+
+void Set_Z_Feed_Divisor(uint16_t feed_hundredths)
+{
+  uint32_t numerator = (uint32_t)ENC_LINE_PER_REV * SCREW_Z;
+  uint32_t denominator = (uint32_t)2 * MOTOR_Z_STEP_PER_REV * McSTEP_Z * feed_hundredths;
+  if (denominator == 0) denominator = 1;
+
+  uint32_t ticks = numerator / denominator;
+  z_feed_fraction_remainder = numerator % denominator;
+  z_feed_fraction_denominator = denominator;
+  z_feed_fraction_accumulator = 0;
+
+  // OCR задава броя енкодерни фронтове минус едно.
+  Feed_Divisor = (ticks > 1) ? (uint16_t)(ticks - 1) : 1;
+}
 uint16_t aFeed_Divisor = 0;
 
 byte Cs_Count = 0;
@@ -1092,7 +1111,7 @@ ISR (TIMER5_COMPA_vect)
   diag_compa_count++;
   diag_encoder_ticks += (uint32_t)OCR5A + 1;
   // DIAG START: отделяме оборот при установена, зададена скорост на подаване.
-  bool diag_steady_interval = (!diag_rev_done && OCR5A == Feed_Divisor);
+  bool diag_steady_interval = (!diag_rev_done && (OCR5A == Feed_Divisor || OCR5A == (uint16_t)(Feed_Divisor + 1)));
   if (diag_steady_interval) {
     diag_rev_encoder_ticks += (uint32_t)OCR5A + 1;
     diag_rev_compa++;
@@ -1242,11 +1261,22 @@ ISR (TIMER5_COMPB_vect)
         if (Motor_X_Dir == CW)  { Motor_X_Pos ++;}
         else                    { Motor_X_Pos --; }
 
-        if (OCR5A > Feed_Divisor) {
+        if (OCR5A > (uint16_t)(Feed_Divisor + 1)) {
           OCR5A--;
         }
         else if (OCR5A < Feed_Divisor) {
-          OCR5A ++;
+          OCR5A++;
+        }
+        else {
+          // Разпределяме дробната част между съседни цели интервали.
+          // Например 3.125 такта: седем интервала по 3 и един по 4.
+          z_feed_fraction_accumulator += z_feed_fraction_remainder;
+          if (z_feed_fraction_accumulator >= z_feed_fraction_denominator) {
+            z_feed_fraction_accumulator -= z_feed_fraction_denominator;
+            OCR5A = Feed_Divisor + 1;
+          } else {
+            OCR5A = Feed_Divisor;
+          }
         }
       }
     }
