@@ -32,7 +32,9 @@ void Feed_Left(bool & a_flag, bool & b_flag)
    Start_Speed = ENC_LINE_PER_REV / ((float)MOTOR_Z_STEP_PER_REV * McSTEP_Z * MIN_FEED / SCREW_Z) / FEED_ACCEL /2 +0.5;
    if (Motor_Z_Pos < Limit_Pos_Left - Start_Speed * 2)
    {
+      // >>> ПРОМЯНА 4: изчисляваме дробния делител за зададеното Z подаване.
       Set_Z_Feed_Divisor(Feed_mm);
+      // <<< КРАЙ НА ПРОМЯНА 4 >>>
       if (Feed_Divisor < Start_Speed)
       {
          max_OCR5A = Start_Speed;
